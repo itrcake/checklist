@@ -17,6 +17,8 @@ const BUNNY_SVG = `
 
 const FOLDER_SVG = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5h3.6l2 2.2h7.4A2.5 2.5 0 0 1 21 9.7v7.8a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5z" fill="var(--accent)" stroke="var(--accent-strong)" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
 
+const CHECKLIST_SVG = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="3" fill="var(--surface)" stroke="var(--accent-strong)" stroke-width="1.6"/><rect x="9" y="2.5" width="6" height="3.5" rx="1.5" fill="var(--accent)" stroke="var(--accent-strong)" stroke-width="1.4"/><path d="M8.5 11l1.5 1.5 2.5-3M8.5 16.5l1.5 1.5 2.5-3" fill="none" stroke="var(--accent-strong)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.5 11.5h2M14.5 17h2" stroke="var(--accent-strong)" stroke-width="1.6" stroke-linecap="round"/></svg>`;
+
 // วาดกระต่ายลงในช่อง <svg class="bunny"> ของแต่ละหน้า
 document.querySelectorAll("svg.bunny").forEach((svg) => {
   svg.setAttribute("viewBox", "0 0 120 120");
@@ -50,12 +52,13 @@ function hop() {
 }
 
 // บันทึกประวัติ (ไม่เก็บชื่อคน)
-async function logEvent(action, { item = null, folder = null, detail = null } = {}) {
+async function logEvent(action, { item = null, folder = null, checklist = null, detail = null } = {}) {
   const { error } = await db.from("activity_log").insert({
     actor: null,
     action,
     item_title: item,
     folder_name: folder,
+    checklist_name: checklist,
     detail,
   });
   if (error) console.error("บันทึกประวัติไม่สำเร็จ", error);
@@ -79,5 +82,43 @@ function renderEditRow(value, label, onSave, onCancel) {
   actions.append(makeButton("บันทึก", () => onSave(input.value)), makeButton("ยกเลิก", onCancel));
   li.append(input, actions);
   queueMicrotask(() => input.focus());
+  return li;
+}
+
+// ข้อความความคืบหน้า
+function progressText(done, total, emptyText = "ยังไม่มีรายการ") {
+  if (total === 0) return emptyText;
+  if (done === total) return `เสร็จครบ ${total} รายการ`;
+  return `เสร็จแล้ว ${done} จาก ${total} รายการ`;
+}
+
+// แถวที่กดเข้าไปได้ (ใช้กับโฟลเดอร์และ checklist)
+function renderLinkRow({ href, icon, name, meta, onEdit, onDelete }) {
+  const li = document.createElement("li");
+  li.className = "item folder-row";
+
+  const link = document.createElement("a");
+  link.className = "folder-link";
+  link.href = href;
+
+  const iconEl = document.createElement("span");
+  iconEl.className = "folder-icon";
+  iconEl.innerHTML = icon;
+
+  const text = document.createElement("span");
+  const nameEl = document.createElement("span");
+  nameEl.className = "folder-name";
+  nameEl.textContent = name;
+  const metaEl = document.createElement("span");
+  metaEl.className = "folder-meta";
+  metaEl.textContent = meta;
+  text.append(nameEl, metaEl);
+  link.append(iconEl, text);
+
+  const actions = document.createElement("div");
+  actions.className = "actions";
+  actions.append(makeButton("แก้ไข", onEdit), makeButton("ลบ", onDelete, "danger"));
+
+  li.append(link, actions);
   return li;
 }
