@@ -10,7 +10,7 @@ let pendingReload = false;
 
 async function loadFolders() {
   const { data, error } = await db.from("folders")
-    .select("id, name, created_at, items(done)")
+    .select("id, name, created_at, checklists(id, items(done))")
     .order("created_at", { ascending: true });
   if (error) { showStatus("โหลดโฟลเดอร์ไม่สำเร็จ: " + error.message); return; }
   folders = data;
@@ -26,49 +26,25 @@ function render() {
     listEl.append(li);
   }
   for (const f of folders) {
-    listEl.append(f.id === editingId
-      ? renderEditRow(f.name, "แก้ไขชื่อโฟลเดอร์", (v) => renameFolder(f, v), stopEditing)
-      : renderFolderRow(f));
+    if (f.id === editingId) {
+      listEl.append(renderEditRow(f.name, "แก้ไขชื่อโฟลเดอร์", (v) => renameFolder(f, v), stopEditing));
+      continue;
+    }
+    const all = f.checklists.flatMap((c) => c.items);
+    const done = all.filter((i) => i.done).length;
+    const meta = f.checklists.length === 0
+      ? "ยังไม่มี checklist"
+      : `${f.checklists.length} checklist · ` + progressText(done, all.length);
+    listEl.append(renderLinkRow({
+      href: "folder.html?id=" + f.id,
+      icon: FOLDER_SVG,
+      name: f.name,
+      meta,
+      onEdit: () => { editingId = f.id; render(); },
+      onDelete: () => deleteFolder(f),
+    }));
   }
   progressEl.textContent = folders.length ? `มีทั้งหมด ${folders.length} โฟลเดอร์` : "สร้างโฟลเดอร์แรกกันเลย";
-}
-
-function renderFolderRow(f) {
-  const total = f.items.length;
-  const done = f.items.filter((i) => i.done).length;
-
-  const li = document.createElement("li");
-  li.className = "item folder-row";
-
-  const link = document.createElement("a");
-  link.className = "folder-link";
-  link.href = "folder.html?id=" + f.id;
-
-  const icon = document.createElement("span");
-  icon.className = "folder-icon";
-  icon.innerHTML = FOLDER_SVG;
-
-  const text = document.createElement("span");
-  const name = document.createElement("span");
-  name.className = "folder-name";
-  name.textContent = f.name;
-  const meta = document.createElement("span");
-  meta.className = "folder-meta";
-  meta.textContent = total === 0 ? "ยังไม่มีรายการ"
-    : done === total ? `เสร็จครบ ${total} รายการ`
-    : `เสร็จแล้ว ${done} จาก ${total} รายการ`;
-  text.append(name, meta);
-  link.append(icon, text);
-
-  const actions = document.createElement("div");
-  actions.className = "actions";
-  actions.append(
-    makeButton("แก้ไข", () => { editingId = f.id; render(); }),
-    makeButton("ลบ", () => deleteFolder(f), "danger"),
-  );
-
-  li.append(link, actions);
-  return li;
 }
 
 function stopEditing() {
@@ -97,14 +73,14 @@ async function renameFolder(f, newName) {
 }
 
 async function deleteFolder(f) {
-  const count = f.items.length;
+  const count = f.checklists.length;
   const msg = count
-    ? `ลบโฟลเดอร์ "${f.name}" และรายการข้างในทั้งหมด ${count} รายการ ใช่ไหม\nลบแล้วกู้คืนไม่ได้`
+    ? `ลบโฟลเดอร์ "${f.name}" และ checklist ข้างในทั้งหมด ${count} อัน ใช่ไหม\nลบแล้วกู้คืนไม่ได้`
     : `ลบโฟลเดอร์ "${f.name}" ใช่ไหม`;
   if (!confirm(msg)) return;
   const { error } = await db.from("folders").delete().eq("id", f.id);
   if (error) { showStatus("ลบไม่สำเร็จ: " + error.message); return; }
-  await logEvent("ลบโฟลเดอร์", { folder: f.name, detail: count ? `รวมรายการข้างใน ${count} รายการ` : null });
+  await logEvent("ลบโฟลเดอร์", { folder: f.name, detail: count ? `รวม checklist ข้างใน ${count} อัน` : null });
   await loadFolders();
 }
 
@@ -115,10 +91,11 @@ formEl.addEventListener("submit", (e) => {
   addFolder(name);
 });
 
-// อัปเดตเองเมื่อคนอื่นแก้โฟลเดอร์หรือรายการ
+// อัปเดตเองเมื่อคนอื่นแก้ข้อมูล
 const onChange = () => { if (editingId === null) loadFolders(); else pendingReload = true; };
 db.channel("folders-page")
   .on("postgres_changes", { event: "*", schema: "public", table: "folders" }, onChange)
+  .on("postgres_changes", { event: "*", schema: "public", table: "checklists" }, onChange)
   .on("postgres_changes", { event: "*", schema: "public", table: "items" }, onChange)
   .subscribe();
 
