@@ -40,6 +40,7 @@ function render() {
       icon: FOLDER_SVG,
       name: f.name,
       meta,
+      ratio: all.length ? done / all.length : null,
       onEdit: () => { editingId = f.id; render(); },
       onDelete: () => deleteFolder(f),
     }));
