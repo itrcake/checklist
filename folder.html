@@ -12,7 +12,7 @@
 </head>
 <body>
   <main class="wrap">
-    <a href="index.html" class="crumb">← โฟลเดอร์ทั้งหมด</a>
+    <a href="index.html" class="crumb">← Checklist ทั้งหมด</a>
     <header class="hero">
       <svg class="bunny" id="bunny" aria-hidden="true"></svg>
       <div class="hero-text">
@@ -24,8 +24,8 @@
 
     <section class="card">
       <form id="add-form" class="add">
-        <input id="new-name" placeholder="ตั้งชื่อ checklist ใหม่ เช่น ห้องนั่งเล่น" maxlength="100" aria-label="ชื่อ checklist ใหม่">
-        <button type="submit">สร้าง checklist</button>
+        <input id="new-title" placeholder="เพิ่มงานใหม่ เช่น ซื้อกระถางต้นไม้" maxlength="200" aria-label="ชื่องานใหม่">
+        <button type="submit">เพิ่มงาน</button>
       </form>
       <p id="status" class="status" role="status"></p>
       <ul id="list" class="list"></ul>
@@ -35,6 +35,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="config.js"></script>
   <script src="common.js"></script>
-  <script src="checklists.js"></script>
+  <script src="items.js"></script>
 </body>
 </html>
