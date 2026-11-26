@@ -15,25 +15,6 @@
   --shadow: 0 8px 24px rgba(232, 121, 154, 0.14);
   color-scheme: light;
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #2a1d22;
-    --dot: #36262c;
-    --surface: #35272d;
-    --ink: #fbe9ee;
-    --muted: #c9a6b2;
-    --line: #4b3740;
-    --accent: #f5a8be;
-    --accent-strong: #f7b8ca;
-    --accent-soft: #46303a;
-    --on-accent: #3a1d27;
-    --bunny: #fff6f8;
-    --bunny-inner: #f5a8be;
-    --danger: #ff9db0;
-    --shadow: none;
-    color-scheme: dark;
-  }
-}
 
 * { box-sizing: border-box; }
 
