@@ -3,19 +3,40 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🐰%3C/text%3E%3C/svg%3E">
   <title>ประวัติการแก้ไข · Checklist</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Mali:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <main class="wrap">
-    <header class="top">
-      <h1>ประวัติการแก้ไข</h1>
+    <header class="hero">
+      <svg class="bunny small" viewBox="0 0 120 120" aria-hidden="true">
+        <ellipse cx="42" cy="34" rx="12" ry="30" transform="rotate(-12 42 34)" fill="var(--bunny)" stroke="var(--ink)" stroke-width="3"/>
+        <ellipse cx="42" cy="38" rx="5.5" ry="19" transform="rotate(-12 42 38)" fill="var(--bunny-inner)"/>
+        <ellipse cx="78" cy="34" rx="12" ry="30" transform="rotate(12 78 34)" fill="var(--bunny)" stroke="var(--ink)" stroke-width="3"/>
+        <ellipse cx="78" cy="38" rx="5.5" ry="19" transform="rotate(12 78 38)" fill="var(--bunny-inner)"/>
+        <path d="M88 13c-2-4-8-3-8 1 0 4 8 8 8 8s8-4 8-8c0-4-6-5-8-1z" fill="var(--accent)" stroke="var(--ink)" stroke-width="2"/>
+        <ellipse cx="60" cy="80" rx="40" ry="31" fill="var(--bunny)" stroke="var(--ink)" stroke-width="3"/>
+        <ellipse cx="46" cy="77" rx="3.6" ry="4.6" fill="var(--ink)"/>
+        <ellipse cx="74" cy="77" rx="3.6" ry="4.6" fill="var(--ink)"/>
+        <circle cx="47.4" cy="75.2" r="1.3" fill="#fff"/>
+        <circle cx="75.4" cy="75.2" r="1.3" fill="#fff"/>
+        <ellipse cx="35" cy="88" rx="6.5" ry="3.8" fill="var(--bunny-inner)"/>
+        <ellipse cx="85" cy="88" rx="6.5" ry="3.8" fill="var(--bunny-inner)"/>
+        <path d="M57 84h6l-3 3.2z" fill="var(--accent-strong)" stroke="var(--accent-strong)" stroke-linejoin="round" stroke-width="1.5"/>
+        <path d="M54 90q3 3.5 6 0q3 3.5 6 0" fill="none" stroke="var(--ink)" stroke-width="2.2" stroke-linecap="round"/>
+      </svg>
+      <div class="hero-text">
+        <h1>ประวัติการแก้ไข</h1>
+        <p class="bubble">ใครทำอะไรไปบ้าง ดูได้ที่นี่</p>
+      </div>
       <a href="index.html" class="link">กลับไปที่ Checklist</a>
     </header>
 
+    <section class="card">
     <input id="filter" class="filter" placeholder="กรองตามชื่อคนหรือรายการ" aria-label="กรองประวัติ">
     <p id="status" class="status" role="status"></p>
 
@@ -27,6 +48,7 @@
         <tbody id="rows"></tbody>
       </table>
     </div>
+    </section>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
