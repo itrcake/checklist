@@ -24,8 +24,8 @@
 
     <section class="card">
       <form id="add-form" class="add">
-        <input id="new-title" placeholder="เพิ่มรายการใหม่" maxlength="200" aria-label="ชื่อรายการใหม่">
-        <button type="submit">เพิ่ม</button>
+        <input id="new-name" placeholder="ตั้งชื่อ checklist ใหม่ เช่น ห้องนั่งเล่น" maxlength="100" aria-label="ชื่อ checklist ใหม่">
+        <button type="submit">สร้าง checklist</button>
       </form>
       <p id="status" class="status" role="status"></p>
       <ul id="list" class="list"></ul>
@@ -35,6 +35,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="config.js"></script>
   <script src="common.js"></script>
-  <script src="items.js"></script>
+  <script src="checklists.js"></script>
 </body>
 </html>
