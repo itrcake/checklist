@@ -49,14 +49,16 @@ function render() {
   if (items.length === 0) {
     const li = document.createElement("li");
     li.className = "empty";
-    li.textContent = "ยังไม่มีรายการ เพิ่มรายการแรกได้จากช่องด้านบน";
+    li.textContent = "ยังไม่มีรายการ พิมพ์ด้านบนแล้วกดเพิ่มได้เลย";
     listEl.append(li);
   }
   for (const item of items) {
     listEl.append(item.id === editingId ? renderEditRow(item) : renderRow(item));
   }
   const done = items.filter((i) => i.done).length;
-  progressEl.textContent = items.length ? `เสร็จแล้ว ${done} จาก ${items.length} รายการ` : "";
+  if (items.length === 0) progressEl.textContent = "มาเริ่มรายการแรกกัน";
+  else if (done === items.length) progressEl.textContent = `เสร็จครบ ${done} รายการแล้ว เก่งมาก!`;
+  else progressEl.textContent = `เสร็จแล้ว ${done} จาก ${items.length} รายการ`;
 }
 
 function renderRow(item) {
@@ -111,6 +113,15 @@ function renderEditRow(item) {
   return li;
 }
 
+// กระต่ายกระโดดดีใจเมื่อมีรายการเสร็จ
+function hop() {
+  const bunny = document.getElementById("bunny");
+  if (!bunny) return;
+  bunny.classList.remove("hop");
+  void bunny.getBoundingClientRect();
+  bunny.classList.add("hop");
+}
+
 function stopEditing() {
   editingId = null;
   if (pendingReload) { pendingReload = false; loadItems(); } else { render(); }
@@ -131,6 +142,7 @@ async function toggleDone(item, done) {
     .eq("id", item.id);
   if (error) { showStatus("อัปเดตไม่สำเร็จ: " + error.message); render(); return; }
   await writeLog(done ? "ทำเครื่องหมายเสร็จ" : "ยกเลิกสถานะเสร็จ", item.title);
+  if (done) hop();
   await loadItems();
 }
 
