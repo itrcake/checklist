@@ -1,103 +1,105 @@
-// หน้าแรก: รายการโฟลเดอร์
+// หน้าแรก: รายการ checklist ทั้งหมด
 const listEl = document.getElementById("list");
 const progressEl = document.getElementById("progress");
 const formEl = document.getElementById("add-form");
 const nameEl = document.getElementById("new-name");
 
-let folders = [];
+let lists = [];
 let editingId = null;
 let pendingReload = false;
 
-async function loadFolders() {
+function taskText(done, total) {
+  if (total === 0) return "ยังไม่มีงาน";
+  if (done === total) return `เสร็จครบ ${total} งาน`;
+  return `เสร็จแล้ว ${done} จาก ${total} งาน`;
+}
+
+async function loadLists() {
   const { data, error } = await db.from("folders")
-    .select("id, name, created_at, checklists(id, items(done))")
+    .select("id, name, created_at, items(done)")
     .order("created_at", { ascending: true });
-  if (error) { showStatus("โหลดโฟลเดอร์ไม่สำเร็จ: " + error.message); return; }
-  folders = data;
+  if (error) { showStatus("โหลด checklist ไม่สำเร็จ: " + error.message); return; }
+  lists = data;
   render();
 }
 
 function render() {
   listEl.replaceChildren();
-  if (folders.length === 0) {
+  if (lists.length === 0) {
     const li = document.createElement("li");
     li.className = "empty";
-    li.textContent = "ยังไม่มีโฟลเดอร์ สร้างโฟลเดอร์แรกด้านบนได้เลย";
+    li.textContent = "ยังไม่มี checklist สร้างอันแรกด้านบนได้เลย";
     listEl.append(li);
   }
-  for (const f of folders) {
-    if (f.id === editingId) {
-      listEl.append(renderEditRow(f.name, "แก้ไขชื่อโฟลเดอร์", (v) => renameFolder(f, v), stopEditing));
+  for (const l of lists) {
+    if (l.id === editingId) {
+      listEl.append(renderEditRow(l.name, "แก้ไขชื่อ checklist", (v) => renameList(l, v), stopEditing));
       continue;
     }
-    const all = f.checklists.flatMap((c) => c.items);
-    const done = all.filter((i) => i.done).length;
-    const meta = f.checklists.length === 0
-      ? "ยังไม่มี checklist"
-      : `${f.checklists.length} checklist · ` + progressText(done, all.length);
+    const total = l.items.length;
+    const done = l.items.filter((i) => i.done).length;
     listEl.append(renderLinkRow({
-      href: "folder.html?id=" + f.id,
-      icon: FOLDER_SVG,
-      name: f.name,
-      meta,
-      ratio: all.length ? done / all.length : null,
-      onEdit: () => { editingId = f.id; render(); },
-      onDelete: () => deleteFolder(f),
+      href: "folder.html?id=" + l.id,
+      icon: CHECKLIST_SVG,
+      name: l.name,
+      meta: taskText(done, total),
+      ratio: total ? done / total : null,
+      onEdit: () => { editingId = l.id; render(); },
+      onDelete: () => deleteList(l),
     }));
   }
-  progressEl.textContent = folders.length ? `มีทั้งหมด ${folders.length} โฟลเดอร์` : "สร้างโฟลเดอร์แรกกันเลย";
+  progressEl.textContent = lists.length ? `มีทั้งหมด ${lists.length} checklist` : "สร้าง checklist แรกกันเลย";
 }
 
 function stopEditing() {
   editingId = null;
-  if (pendingReload) { pendingReload = false; loadFolders(); } else { render(); }
+  if (pendingReload) { pendingReload = false; loadLists(); } else { render(); }
 }
 
-async function addFolder(name) {
+async function addList(name) {
   const { error } = await db.from("folders").insert({ name });
-  if (error) { showStatus("สร้างโฟลเดอร์ไม่สำเร็จ: " + error.message); return; }
-  await logEvent("สร้างโฟลเดอร์", { folder: name });
+  if (error) { showStatus("สร้าง checklist ไม่สำเร็จ: " + error.message); return; }
+  await logEvent("สร้าง checklist", { folder: name });
   nameEl.value = "";
-  await loadFolders();
+  await loadLists();
 }
 
-async function renameFolder(f, newName) {
+async function renameList(l, newName) {
   newName = newName.trim();
-  if (!newName) { showStatus("ชื่อโฟลเดอร์ว่างไม่ได้"); return; }
-  if (newName === f.name) { stopEditing(); return; }
-  const { error } = await db.from("folders").update({ name: newName }).eq("id", f.id);
+  if (!newName) { showStatus("ชื่อ checklist ว่างไม่ได้"); return; }
+  if (newName === l.name) { stopEditing(); return; }
+  const { error } = await db.from("folders").update({ name: newName }).eq("id", l.id);
   if (error) { showStatus("บันทึกไม่สำเร็จ: " + error.message); return; }
-  await logEvent("เปลี่ยนชื่อโฟลเดอร์", { folder: newName, detail: "ชื่อเดิม: " + f.name });
+  await logEvent("เปลี่ยนชื่อ checklist", { folder: newName, detail: "ชื่อเดิม: " + l.name });
   editingId = null;
   pendingReload = false;
-  await loadFolders();
+  await loadLists();
 }
 
-async function deleteFolder(f) {
-  const count = f.checklists.length;
+async function deleteList(l) {
+  const count = l.items.length;
   const msg = count
-    ? `ลบโฟลเดอร์ "${f.name}" และ checklist ข้างในทั้งหมด ${count} อัน ใช่ไหม\nลบแล้วกู้คืนไม่ได้`
-    : `ลบโฟลเดอร์ "${f.name}" ใช่ไหม`;
+    ? `ลบ checklist "${l.name}" และงานข้างในทั้งหมด ${count} งาน ใช่ไหม\nลบแล้วกู้คืนไม่ได้`
+    : `ลบ checklist "${l.name}" ใช่ไหม`;
   if (!confirm(msg)) return;
-  const { error } = await db.from("folders").delete().eq("id", f.id);
+  const { error } = await db.from("folders").delete().eq("id", l.id);
   if (error) { showStatus("ลบไม่สำเร็จ: " + error.message); return; }
-  await logEvent("ลบโฟลเดอร์", { folder: f.name, detail: count ? `รวม checklist ข้างใน ${count} อัน` : null });
-  await loadFolders();
+  await logEvent("ลบ checklist", { folder: l.name, detail: count ? `รวมงานข้างใน ${count} งาน` : null });
+  await loadLists();
 }
 
 formEl.addEventListener("submit", (e) => {
   e.preventDefault();
   const name = nameEl.value.trim();
   if (!name) { nameEl.focus(); return; }
-  addFolder(name);
+  addList(name);
 });
 
 // อัปเดตเองเมื่อคนอื่นแก้ข้อมูล
-const onChange = () => { if (editingId === null) loadFolders(); else pendingReload = true; };
-db.channel("folders-page")
+const onChange = () => { if (editingId === null) loadLists(); else pendingReload = true; };
+db.channel("lists-page")
   .on("postgres_changes", { event: "*", schema: "public", table: "folders" }, onChange)
-  .on("postgres_changes", { event: "*", schema: "public", table: "checklists" }, onChange)
   .on("postgres_changes", { event: "*", schema: "public", table: "items" }, onChange)
   .subscribe();
 
-loadFolders();
+loadLists();
