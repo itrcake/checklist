@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Checklist</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="wrap">
+    <header class="top">
+      <h1>Checklist</h1>
+      <a href="log.html" class="link">ดูประวัติการแก้ไข</a>
+    </header>
+
+    <section class="who">
+      <label for="name">ชื่อของคุณ</label>
+      <input id="name" placeholder="เช่น Cake" autocomplete="nickname">
+      <p class="hint">ชื่อนี้จะถูกบันทึกในประวัติทุกครั้งที่คุณเพิ่ม แก้ไข ลบ หรือทำเครื่องหมายเสร็จ</p>
+    </section>
+
+    <form id="add-form" class="add">
+      <input id="new-title" placeholder="เพิ่มรายการใหม่" maxlength="200" aria-label="ชื่อรายการใหม่">
+      <button type="submit">เพิ่ม</button>
+    </form>
+
+    <p id="status" class="status" role="status"></p>
+    <p id="progress" class="progress"></p>
+    <ul id="list" class="list"></ul>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
