@@ -12,22 +12,21 @@
 </head>
 <body>
   <main class="wrap">
-    <a href="index.html" class="crumb">← โฟลเดอร์ทั้งหมด</a>
     <header class="hero">
       <svg class="bunny small" aria-hidden="true"></svg>
       <div class="hero-text">
         <h1>ประวัติการแก้ไข</h1>
-        <p class="bubble">ทำอะไรไปบ้าง ดูย้อนหลังได้ที่นี่</p>
+        <p class="bubble">แสดงเฉพาะ 24 ชั่วโมงล่าสุด</p>
       </div>
     </header>
 
     <section class="card">
-      <input id="filter" class="filter" placeholder="ค้นหาตามโฟลเดอร์ checklist หรือรายการ" aria-label="ค้นหาประวัติ">
+      <input id="filter" class="filter" placeholder="ค้นหาตาม checklist หรืองาน" aria-label="ค้นหาประวัติ">
       <p id="status" class="status" role="status"></p>
       <div class="table-wrap">
         <table>
           <thead>
-            <tr><th>เวลา</th><th>โฟลเดอร์</th><th>Checklist</th><th>ทำอะไร</th><th>รายการ</th><th>รายละเอียด</th></tr>
+            <tr><th>เวลา</th><th>Checklist</th><th>ทำอะไร</th><th>งาน</th><th>รายละเอียด</th></tr>
           </thead>
           <tbody id="rows"></tbody>
         </table>
@@ -54,12 +53,12 @@
     function render() {
       const q = filterEl.value.trim().toLowerCase();
       const shown = logs.filter((l) =>
-        !q || [l.folder_name, l.checklist_name, l.item_title, l.action].some((v) => (v || "").toLowerCase().includes(q)));
+        !q || [l.folder_name, l.item_title, l.action].some((v) => (v || "").toLowerCase().includes(q)));
       rowsEl.replaceChildren();
       if (shown.length === 0) {
         const tr = document.createElement("tr");
-        const td = cell(logs.length ? "ไม่พบประวัติที่ตรงกับคำค้น" : "ยังไม่มีประวัติ");
-        td.colSpan = 6;
+        const td = cell(logs.length ? "ไม่พบประวัติที่ตรงกับคำค้น" : "ยังไม่มีประวัติใน 24 ชั่วโมงที่ผ่านมา");
+        td.colSpan = 5;
         tr.append(td);
         rowsEl.append(tr);
         return;
@@ -69,7 +68,6 @@
         tr.append(
           cell(fmt.format(new Date(l.created_at)), "time"),
           cell(l.folder_name || "–"),
-          cell(l.checklist_name || "–"),
           cell(l.action),
           cell(l.item_title),
           cell(l.detail, "detail"),
@@ -81,6 +79,7 @@
     async function loadLog() {
       const { data, error } = await db.from("activity_log")
         .select("*")
+        .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
         .order("created_at", { ascending: false })
         .limit(500);
       if (error) { showStatus("โหลดประวัติไม่สำเร็จ: " + error.message); return; }
