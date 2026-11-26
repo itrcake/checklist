@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ประวัติการแก้ไข · Checklist</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="wrap">
+    <header class="top">
+      <h1>ประวัติการแก้ไข</h1>
+      <a href="index.html" class="link">กลับไปที่ Checklist</a>
+    </header>
+
+    <input id="filter" class="filter" placeholder="กรองตามชื่อคนหรือรายการ" aria-label="กรองประวัติ">
+    <p id="status" class="status" role="status"></p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>เวลา</th><th>ใคร</th><th>ทำอะไร</th><th>รายการ</th><th>รายละเอียด</th></tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="config.js"></script>
+  <script>
+    const rowsEl = document.getElementById("rows");
+    const statusEl = document.getElementById("status");
+    const filterEl = document.getElementById("filter");
+    const fmt = new Intl.DateTimeFormat("th-TH", { dateStyle: "medium", timeStyle: "short" });
+    let logs = [];
+
+    function cell(text, cls) {
+      const td = document.createElement("td");
+      td.textContent = text ?? "";
+      if (cls) td.className = cls;
+      return td;
+    }
+
+    function render() {
+      const q = filterEl.value.trim().toLowerCase();
+      const shown = logs.filter((l) =>
+        !q || [l.actor, l.item_title, l.action].some((v) => (v || "").toLowerCase().includes(q)));
+      rowsEl.replaceChildren();
+      if (shown.length === 0) {
+        const tr = document.createElement("tr");
+        const td = cell(logs.length ? "ไม่พบประวัติที่ตรงกับคำค้น" : "ยังไม่มีประวัติ");
+        td.colSpan = 5;
+        tr.append(td);
+        rowsEl.append(tr);
+        return;
+      }
+      for (const l of shown) {
+        const tr = document.createElement("tr");
+        tr.append(
+          cell(fmt.format(new Date(l.created_at)), "time"),
+          cell(l.actor),
+          cell(l.action),
+          cell(l.item_title),
+          cell(l.detail, "detail"),
+        );
+        rowsEl.append(tr);
+      }
+    }
+
+    async function loadLog() {
+      const { data, error } = await db.from("activity_log")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(500);
+      if (error) { statusEl.textContent = "โหลดประวัติไม่สำเร็จ: " + error.message; return; }
+      logs = data;
+      render();
+    }
+
+    filterEl.addEventListener("input", render);
+    loadLog();
+  </script>
+</body>
+</html>
