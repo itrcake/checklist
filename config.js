@@ -1,6 +1,6 @@
 // ใส่ค่าจาก Supabase → Project Settings → API Keys
 const SUPABASE_URL = "https://zsqaramdrrqmxqfssbjg.supabase.co";
-const SUPABASE_KEY = "YOUR-PUBLISHABLE-OR-ANON-KEY";
+const SUPABASE_KEY = "sb_publishable_AxffBmJYbDo1CzfMK48NUA_R6Z_b-o7";
 
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
