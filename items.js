@@ -1,30 +1,38 @@
-// หน้าโฟลเดอร์: รายการ checklist ในโฟลเดอร์
+// หน้า checklist: รายการย่อยใน checklist
 const listEl = document.getElementById("list");
 const progressEl = document.getElementById("progress");
-const titleHeading = document.getElementById("folder-title");
+const titleHeading = document.getElementById("checklist-title");
+const crumbEl = document.getElementById("crumb");
 const formEl = document.getElementById("add-form");
 const titleEl = document.getElementById("new-title");
 
-const folderId = Number(new URLSearchParams(location.search).get("id"));
+const checklistId = Number(new URLSearchParams(location.search).get("id"));
+let checklist = null;
 let folder = null;
 let items = [];
 let editingId = null;
 let pendingReload = false;
 
-async function loadFolder() {
-  if (!folderId) { location.replace("index.html"); return false; }
-  const { data, error } = await db.from("folders").select("id, name").eq("id", folderId).maybeSingle();
-  if (error) { showStatus("โหลดโฟลเดอร์ไม่สำเร็จ: " + error.message); return false; }
+async function loadChecklist() {
+  if (!checklistId) { location.replace("index.html"); return false; }
+  const { data, error } = await db.from("checklists")
+    .select("id, name, folder_id, folders(id, name)")
+    .eq("id", checklistId)
+    .maybeSingle();
+  if (error) { showStatus("โหลด checklist ไม่สำเร็จ: " + error.message); return false; }
   if (!data) {
-    folder = null;
-    titleHeading.textContent = "ไม่พบโฟลเดอร์นี้";
+    checklist = null;
+    titleHeading.textContent = "ไม่พบ checklist นี้";
     progressEl.textContent = "อาจถูกลบไปแล้ว กลับไปหน้าโฟลเดอร์ได้เลย";
     formEl.hidden = true;
     listEl.replaceChildren();
     return false;
   }
-  folder = data;
+  checklist = data;
+  folder = data.folders;
   titleHeading.textContent = data.name;
+  crumbEl.href = "folder.html?id=" + data.folder_id;
+  crumbEl.textContent = "← " + (folder?.name ?? "โฟลเดอร์");
   document.title = data.name + " · Checklist";
   return true;
 }
@@ -32,7 +40,7 @@ async function loadFolder() {
 async function loadItems() {
   const { data, error } = await db.from("items")
     .select("*")
-    .eq("folder_id", folderId)
+    .eq("checklist_id", checklistId)
     .order("created_at", { ascending: true });
   if (error) { showStatus("โหลดรายการไม่สำเร็จ: " + error.message); return; }
   items = data;
@@ -90,9 +98,9 @@ function stopEditing() {
 }
 
 async function addItem(title) {
-  const { error } = await db.from("items").insert({ title, folder_id: folderId });
+  const { error } = await db.from("items").insert({ title, checklist_id: checklistId });
   if (error) { showStatus("เพิ่มรายการไม่สำเร็จ: " + error.message); return; }
-  await logEvent("เพิ่มรายการ", { item: title, folder: folder?.name });
+  await logEvent("เพิ่มรายการ", { item: title, folder: folder?.name, checklist: checklist?.name });
   titleEl.value = "";
   await loadItems();
 }
@@ -102,7 +110,7 @@ async function toggleDone(item, done) {
     .update({ done, updated_at: new Date().toISOString() })
     .eq("id", item.id);
   if (error) { showStatus("อัปเดตไม่สำเร็จ: " + error.message); render(); return; }
-  await logEvent(done ? "ทำเครื่องหมายเสร็จ" : "ยกเลิกสถานะเสร็จ", { item: item.title, folder: folder?.name });
+  await logEvent(done ? "ทำเครื่องหมายเสร็จ" : "ยกเลิกสถานะเสร็จ", { item: item.title, folder: folder?.name, checklist: checklist?.name });
   if (done) hop();
   await loadItems();
 }
@@ -115,7 +123,7 @@ async function saveEdit(item, newTitle) {
     .update({ title: newTitle, updated_at: new Date().toISOString() })
     .eq("id", item.id);
   if (error) { showStatus("บันทึกไม่สำเร็จ: " + error.message); return; }
-  await logEvent("แก้ไขรายการ", { item: newTitle, folder: folder?.name, detail: "ชื่อเดิม: " + item.title });
+  await logEvent("แก้ไขรายการ", { item: newTitle, folder: folder?.name, checklist: checklist?.name, detail: "ชื่อเดิม: " + item.title });
   editingId = null;
   pendingReload = false;
   await loadItems();
@@ -125,7 +133,7 @@ async function deleteItem(item) {
   if (!confirm(`ลบ "${item.title}" ใช่ไหม`)) return;
   const { error } = await db.from("items").delete().eq("id", item.id);
   if (error) { showStatus("ลบไม่สำเร็จ: " + error.message); return; }
-  await logEvent("ลบรายการ", { item: item.title, folder: folder?.name });
+  await logEvent("ลบรายการ", { item: item.title, folder: folder?.name, checklist: checklist?.name });
   await loadItems();
 }
 
@@ -133,18 +141,21 @@ formEl.addEventListener("submit", (e) => {
   e.preventDefault();
   const title = titleEl.value.trim();
   if (!title) { titleEl.focus(); return; }
-  if (!folder) return;
+  if (!checklist) return;
   addItem(title);
 });
 
-// อัปเดตเองเมื่อคนอื่นแก้รายการ หรือเปลี่ยนชื่อ/ลบโฟลเดอร์นี้
-db.channel("folder-" + folderId)
-  .on("postgres_changes", { event: "*", schema: "public", table: "items", filter: "folder_id=eq." + folderId }, () => {
+// อัปเดตเองเมื่อคนอื่นแก้รายการ หรือเปลี่ยนชื่อ/ลบ checklist นี้
+db.channel("checklist-" + checklistId)
+  .on("postgres_changes", { event: "*", schema: "public", table: "items", filter: "checklist_id=eq." + checklistId }, () => {
     if (editingId === null) loadItems(); else pendingReload = true;
   })
+  .on("postgres_changes", { event: "*", schema: "public", table: "checklists" }, async () => {
+    if (await loadChecklist()) render();
+  })
   .on("postgres_changes", { event: "*", schema: "public", table: "folders" }, async () => {
-    if (await loadFolder()) render();
+    if (await loadChecklist()) render();
   })
   .subscribe();
 
-(async () => { if (await loadFolder()) await loadItems(); })();
+(async () => { if (await loadChecklist()) await loadItems(); })();
