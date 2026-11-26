@@ -58,6 +58,7 @@ function render() {
       icon: CHECKLIST_SVG,
       name: c.name,
       meta: progressText(done, c.items.length),
+      ratio: c.items.length ? done / c.items.length : null,
       onEdit: () => { editingId = c.id; render(); },
       onDelete: () => deleteChecklist(c),
     }));
